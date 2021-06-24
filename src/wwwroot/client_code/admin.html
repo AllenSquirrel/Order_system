@@ -1,0 +1,212 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>一条川菜</title>
+        <meta name="description" content="Charcoal is a free Bootstrap 4 UI kit build by @attacomsian at Wired Dots." />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!--Bootstrap 4-->
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+    </head>
+    <body>
+        <div id="myorder">
+            <!--components-->
+            <section class="my-5 pt-5">
+                <div class="container">
+                    <!-- Tables  -->
+                    <div class="row mb-5" id="tables">
+                        <div class="col-sm-12">
+                            <h1>一条川菜馆</h1>
+                            <div class="mt-3 mb-5">
+                                <div>
+                                    <span style="text-align:left"><h3>后台菜品管理系统</h3></span>
+                                    <span style="text-align:right">
+                                        <button type="button" class="btn btn-primary" v-on:click="insert_show()">新增</button>   
+                                    </span>
+                                </div>
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>名称</th>
+                                            <th>单价</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tfoot>
+                                        <tr v-show="show_flag == true">
+                                            <th>
+                                                <input type="text" v-model="dish.name">
+                                            </th>
+                                            <th>
+                                                <input type="text" v-model="dish.price">
+                                            </th>
+                                            <th style="text-align:left">
+                                                <button type="button" class="btn btn-primary" v-on:click="insert_dish()">提交</button>
+                                            </th>
+                                        </tr>
+                                    </tfoot>
+                                    <tfoot>
+                                        <tr v-show="update_flag == true">
+                                            <th>
+                                                <input type="text" v-model="dish.name">
+                                            </th>
+                                            <th>
+                                                <input type="text" v-model="dish.price">
+                                            </th>
+                                            <th style="text-align:left">
+                                                <button type="button" class="btn btn-primary" v-on:click="update_dish()">修改</button>
+                                            </th>
+                                        </tr>
+                                    </tfoot>
+                                    <tbody>
+                                        
+                                        <tr v-for="dish in dishes">
+                                            <td>{{dish.name}}</td>
+                                            <td>{{dish.price/100}}</td>
+
+                                            <td>
+                                                <button type="button" class="btn btn-primary" v-on:click="update_show()">修改</button>
+                                                <button type="button" class="btn btn-primary" v-on:click="delete_dish(dish.id)">删除</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!--footer-->
+            <section class="py-5 bg-dark">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-6 offset-md-3 col-sm-8 offset-sm-2 col-xs-12 text-center">
+
+                            <p class="pt-2 text-muted">
+                                &copy; Author@AllenSquirrel
+                            </p>
+                            <p class="small">
+                                <a rel="nofollow" target="_blank" href="https://github.com/AllenSquirrel/">powered by AllenSquirrel</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"></script>
+    <script src="js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#myorder',
+            data: {
+                dishes:[],
+                show_flag: false,
+                update_flag: false,
+                dish: {
+                    name:"",
+                    price:0
+                }
+            },
+            methods: {
+                get_total: function() {
+                    var total = 0
+                    for (i=0; i<this.dishes.length;i++){
+                        if(this.dishes[i].selected){
+                            total += (this.dishes[i].price / 100);
+                        }
+                    }
+                    return total;
+                },
+                insert_order : function() {
+                    //{id:, dishes: [dish_id1, dish_id2, ..], status:0 } 
+                    var order ={
+                        dishes:[]
+                    };
+                    //
+                    for (i=0; i<this.dishes.length;i++){
+                        if(this.dishes[i].selected){
+                            order.dishes.push(this.dishes[i].id);
+                        }
+                    }
+                    $.ajax({
+                        url:"/order",
+                        type: "post",
+                        data: JSON.stringify(order),
+                        success: function(res, status, xhr){
+                            if (xhr.status == 200){
+                                alert("下单成功");
+                            }
+                        }
+                    })
+                },
+                get_alldishes: function(){
+                    $.ajax({
+                        url:"/dish",
+                        type: "get",
+                        context: this,
+                        success: function(res, status, xhr)
+                        {
+                            this.dishes = res;
+                        }
+                    })
+                },
+                insert_show :function() {
+                    this.show_flag = true;
+                },
+                update_show: function () {
+                    this.update_flag = true;
+                },
+                insert_dish: function() {
+                    this.dish.price *= 100;
+                    $.ajax({
+                        url:"/dish",
+                        type: "post",
+                        data: JSON.stringify(this.dish),
+                        context: this,
+                        success: function(res, status, xhr)
+                        {
+                            this.get_alldishes();
+                            this.show_flag = false;
+                        }
+                    })
+                },
+                delete_dish: function() {
+                    $.ajax({
+                        url:"/dish/",
+                        type: "delete",
+                        data: JSON.stringify(this.dish),
+                        context: this,
+                        success: function(res, status, xhr)
+                        {
+                            alert("删除成功");
+                            this.get_alldishes();
+                            this.show_flag = false;
+                        }
+                    })
+                },
+                update_dish: function () {
+                    this.dish.price *= 100;
+                    $.ajax({
+                        url: "/dish",
+                        type: "put",
+                        data: JSON.stringify(this.dish),
+                        context: this,
+                        success: function (res, status, xhr) {
+                            this.get_alldishes();
+                            this.update_flag = false;
+                            this.show_flag = false;
+                        }
+                    })
+                }
+            }
+        });
+        app.get_alldishes();
+    </script>
+    </body>
+    </body>
+</html>
